@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="websocket:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/websocket_jar</output-path>
+    <root id="archive" name="websocket.jar">
+      <element id="module-output" name="websocket" />
+    </root>
+  </artifact>
+</component>
