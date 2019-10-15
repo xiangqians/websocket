@@ -4,6 +4,7 @@ import com.xq.ws.Session;
 import com.xq.ws.annotation.*;
 import com.xq.ws.exception.UndefinedException;
 import com.xq.ws.http.WSHttpRequest;
+import com.xq.ws.util.ClassUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -24,6 +25,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * @author xiangqian
@@ -50,70 +52,73 @@ public class WebSocketApp {
         }
     }
 
-    private void initServer() throws Exception {
-        String classesPath = primarySource.getClassLoader().getResource("").getPath().substring(1);
-        for (String basePackage : Config.APPLICATION.basePackages) {
-            String pathname = classesPath + basePackage.replace(".", "/");
-            File file = new File(pathname);
-            if (!file.exists()) {
-                throw new FileNotFoundException(pathname);
-            }
 
-            File[] files = file.listFiles();
+    private void initServer() throws Exception {
+        List<String> classNames = null;
+        for (String packageName : Config.APPLICATION.basePackages) {
             Class<?> clazz = null;
             WebSocketServer webSocketServer = null;
             Config.Server server = null;
-            for (File f : files) {
+
+            // 获取指定包下的所有全类名
+            classNames = ClassUtils.getClassNames(packageName);
+
+            for (String className : classNames) {
                 try {
-                    clazz = Class.forName(basePackage + "." + f.getName().replace(".class", ""));
+                    clazz = Class.forName(className);
                     webSocketServer = clazz.getDeclaredAnnotation(WebSocketServer.class);
                     if (webSocketServer == null) {
                         continue;
                     }
+
                     server = new Config.Server();
                     server.path = webSocketServer.path();
                     server.clazz = clazz;
 
                     Method[] methods = clazz.getDeclaredMethods();
-                    Annotation[] annotations = null;
-                    Annotation annotation = null;
                     Class<?>[] parameterTypes = null;
                     for (Method method : methods) {
-                        if ((annotation = method.getDeclaredAnnotation(OnInit.class)) != null) {
+                        // on init
+                        if (method.getDeclaredAnnotation(OnInit.class) != null) {
                             if ((parameterTypes = method.getParameterTypes()).length == 1
                                     && (parameterTypes[0] == FullHttpRequest.class || parameterTypes[0] == WSHttpRequest.class)) {
                                 method.setAccessible(true);
                                 server.onInit = method;
                             }
-
-                        } else if ((annotation = method.getDeclaredAnnotation(OnOpen.class)) != null) {
-                            if ((parameterTypes = method.getParameterTypes()).length == 1
-                                    && parameterTypes[0] == Session.class) {
+                        }
+                        // on open
+                        else if (method.getDeclaredAnnotation(OnOpen.class) != null) {
+                            if ((parameterTypes = method.getParameterTypes()).length == 1 && parameterTypes[0] == Session.class) {
                                 method.setAccessible(true);
                                 server.onOpen = method;
                             }
-
-                        } else if ((annotation = method.getDeclaredAnnotation(OnMessage.class)) != null) {
-                            if ((parameterTypes = method.getParameterTypes()).length == 1
-                                    && parameterTypes[0] == WebSocketFrame.class) {
+                        }
+                        // on message
+                        else if (method.getDeclaredAnnotation(OnMessage.class) != null) {
+                            if ((parameterTypes = method.getParameterTypes()).length == 1 && parameterTypes[0] == WebSocketFrame.class) {
                                 method.setAccessible(true);
                                 server.onMessage = method;
                             }
 
-                        } else if ((annotation = method.getDeclaredAnnotation(OnClose.class)) != null) {
+                        }
+                        // on close
+                        else if (method.getDeclaredAnnotation(OnClose.class) != null) {
                             if ((parameterTypes = method.getParameterTypes()).length == 0) {
                                 method.setAccessible(true);
                                 server.onClose = method;
                             }
 
-                        } else if ((annotation = method.getDeclaredAnnotation(OnError.class)) != null) {
-                            if ((parameterTypes = method.getParameterTypes()).length == 1
-                                    && parameterTypes[0] == Throwable.class) {
+                        }
+                        // on error
+                        else if (method.getDeclaredAnnotation(OnError.class) != null) {
+                            if ((parameterTypes = method.getParameterTypes()).length == 1 && parameterTypes[0] == Throwable.class) {
                                 method.setAccessible(true);
                                 server.onError = method;
                             }
                         }
                     }
+
+                    // put
                     Config.SERVER_MAP.put(server.path, server);
 
                 } catch (ClassNotFoundException e) {
