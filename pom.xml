@@ -20,7 +20,7 @@
         <netty-all.version>4.1.6.Final</netty-all.version>
 
         <!-- jackson -->
-        <jackson-databind.version>2.9.7</jackson-databind.version>
+        <jackson-databind.version>2.9.10.1</jackson-databind.version>
 
         <!-- slf4j -->
         <slf4j-api.version>1.7.25</slf4j-api.version>
