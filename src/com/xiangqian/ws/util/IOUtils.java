@@ -6,6 +6,9 @@ package com.xiangqian.ws.util;
  */
 public class IOUtils {
 
+    public static final int KB = 1024; // 1KB
+    public static final int MB = 1024 * 1024; // 1MB
+
     /**
      * 释放IO资源
      *
