@@ -1,6 +1,7 @@
 package com.xiangqian.ws.server;
 
 import com.xiangqian.ws.annotation.WSServerConfiguration;
+import com.xiangqian.ws.util.IOUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -43,11 +44,11 @@ public class WSServerApplication {
 //            bootstrap.option(ChannelOption.SO_SNDBUF, 32 * 1024);
 //            bootstrap.option(ChannelOption.SO_RCVBUF, 32 * 1024);
             bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-            ChannelFuture channelFuture = bootstrap.bind(WSConfig.SERVER.port);
+            ChannelFuture channelFuture = bootstrap.bind(WSConfig.SERVER.getPort());
             channelFuture.sync();
 
             log.info("WebSocket服务器启动成功!");
-            log.info("[WebSocket path] http://localhost:" + WSConfig.SERVER.port + WSConfig.SERVER.path);
+            log.info("[WebSocket path] http://" + WSConfig.SERVER.getHost() + ":" + WSConfig.SERVER.getPort() + WSConfig.SERVER.getPath());
 
             channelFuture.channel().closeFuture().sync();
         } finally {
@@ -57,15 +58,16 @@ public class WSServerApplication {
         }
     }
 
-    public static class WebSocketServerInitializer extends ChannelInitializer<SocketChannel> {
+    private static class WebSocketServerInitializer extends ChannelInitializer<SocketChannel> {
         @Override
         protected void initChannel(SocketChannel sc) {
             ChannelPipeline channelPipeline = sc.pipeline();
             channelPipeline.addLast("logging", new LoggingHandler("DEBUG"));
             channelPipeline.addLast("http-codec", new HttpServerCodec());
             channelPipeline.addLast("http-chunked", new ChunkedWriteHandler());
-            channelPipeline.addLast("aggregator", new HttpObjectAggregator(1024 * 64));
-            channelPipeline.addLast("handler", new WSHandler());
+            channelPipeline.addLast("aggregator", new HttpObjectAggregator(IOUtils.KB * 64));
+            channelPipeline.addLast("WSHttpHandler", new WSHttpHandler());
+            channelPipeline.addLast("WSFrameHandler", new WSFrameHandler());
         }
     }
 

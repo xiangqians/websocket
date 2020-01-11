@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.Map;
  * @author xiangqian
  * @date 16:35 2020/01/01
  */
+@Slf4j
 public class WSRequest implements HttpRequest {
 
     private String uri;

@@ -1,34 +1,39 @@
-package com.xiangqian.ws.example.chat.service;
+package com.xiangqian.ws.example.service;
 
 import com.xiangqian.ws.annotation.*;
 import com.xiangqian.ws.scope.WSRequest;
 import com.xiangqian.ws.scope.WSSession;
+import com.xiangqian.ws.util.StringUtils;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author xiangqian
- * @date 14:50 2020/01/04
+ * @date 11:09 2020/01/05
  */
 @Slf4j
+
 // @WSService：指定当前Class为一个回话服务
-@WSService(path = "/user") // path：指定回话服务访问路径
-public class UserService {
+@WSService(path = "/message") // path：指定回话服务访问路径
+public class MessageService {
 
     private WSSession session;
 
+    /**
+     * 连接初始化时
+     *
+     * @param request
+     */
     @OnInit
-    private void init(WSRequest request) {
-        log.info("init");
-        log.info("request param: " + request.getParameters());
+    private boolean init(WSRequest request) {
+        log.debug("init, request param: " + request.getParameters());
+        return true;
     }
+
 
     /**
      * 连接成功时回调方法
@@ -37,11 +42,8 @@ public class UserService {
      */
     @OnOpen
     private void open(WSSession session) {
-        log.info("open");
+        log.debug("open");
         this.session = session;
-
-        // add
-        USER_LIST.add(this);
     }
 
 
@@ -70,12 +72,8 @@ public class UserService {
             text = webSocketFrame.toString();
         }
 
-        log.info("message: " + text);
-
-        // 群发
-        for (UserService user : USER_LIST) {
-            user.session.send(text);
-        }
+        log.debug("message: " + text);
+        session.send(text);
     }
 
     /**
@@ -83,7 +81,7 @@ public class UserService {
      */
     @OnClose
     private void close() {
-        log.info("close");
+        log.debug("close");
     }
 
     /**
@@ -93,37 +91,7 @@ public class UserService {
      */
     @OnError
     private void error(Throwable throwable) {
-        log.info("error");
+        log.error("error", throwable);
     }
-
-    //
-    private static class UserServiceManager {
-        static Map<String, UserService> userServiceMap;
-
-        static {
-            userServiceMap = new ConcurrentHashMap<>();
-        }
-
-        static void add(String username, UserService userService) {
-            userServiceMap.put(username, userService);
-        }
-
-        static void remove(String username) {
-            userServiceMap.remove(username);
-        }
-
-        static void sendMessage(String username, String message) {
-            UserService userService = userServiceMap.get(username);
-            if (userService != null) {
-                userService.session.send(message);
-            }
-        }
-
-        static Set<String> userList() {
-            return userServiceMap.keySet();
-        }
-
-    }
-
 
 }
